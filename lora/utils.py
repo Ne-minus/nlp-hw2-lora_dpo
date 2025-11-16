@@ -53,13 +53,23 @@ def count_trainable_params(model):
 
 def train(model, optimizer, train_loader, device, epochs=1, mode="experiment"):
     model.train()
+
     forwards = []
     backwards = []
+    losses = []
+
+    vram_forward = []
+    vram_backward = []
+    vram_step_total = []
+
     for epoch in range(epochs):
-        losses = []
         for step, batch in tqdm(enumerate(train_loader), total=len(train_loader)):
 
             batch = {k: v.to(device) for k, v in batch.items()}
+
+            torch.cuda.reset_peak_memory_stats()
+            mem_base = get_mem()
+
             start_forward = time.time()
             outputs = model(
                 input_ids=batch["input_ids"],
@@ -67,19 +77,28 @@ def train(model, optimizer, train_loader, device, epochs=1, mode="experiment"):
                 labels=batch["input_ids"],
             )
             end_forward = time.time()
-            forward_duration = end_forward - start_forward
-            forwards.append(forward_duration)
+            forwards.append(end_forward - start_forward)
 
+            forward_peak = torch.cuda.max_memory_allocated() / 1024**2
+            vram_forward.append(forward_peak)
+
+            torch.cuda.reset_peak_memory_stats()
             start_backward = time.time()
-            loss = outputs.loss
 
+            loss = outputs.loss
             loss.backward()
+
             end_backward = time.time()
-            backward_duration = end_backward - start_backward
-            backwards.append(backward_duration)
+            backwards.append(end_backward - start_backward)
+
+            backward_peak = torch.cuda.max_memory_allocated() / 1024**2
+            vram_backward.append(backward_peak)
 
             optimizer.step()
             optimizer.zero_grad()
+
+            mem_end = get_mem()
+            vram_step_total.append(mem_end - mem_base)
 
             if step % 50 == 0:
                 losses.append(loss.detach().cpu().numpy())
@@ -87,6 +106,18 @@ def train(model, optimizer, train_loader, device, epochs=1, mode="experiment"):
             if mode == "experiment" and step == 1000:
                 break
 
-    return forwards, backwards, losses
+    return {
+        "forwards": forwards,
+        "backwards": backwards,
+        "losses": losses,
+        "vram_forward": vram_forward,
+        "vram_backward": vram_backward,
+        "vram_step_total": vram_step_total,
+    }
+
+
+
+def get_mem():
+    return torch.cuda.memory_allocated() / 1024**2 
 
             

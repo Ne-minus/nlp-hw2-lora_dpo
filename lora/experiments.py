@@ -1,4 +1,4 @@
-from lora.utils import get_parents, add_lora_to_model, mark_trainable, count_trainable_params, train
+from lora.utils import get_parents, add_lora_to_model, mark_trainable, count_trainable_params, train, get_mem
 from lora.lora_module import LoRALinear
 import matplotlib.pyplot as plt
 
@@ -48,6 +48,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device: ", device)
 
+
     model = AutoModelForCausalLM.from_pretrained(model_name)
     model.resize_token_embeddings(len(tokenizer))
 
@@ -57,32 +58,46 @@ if __name__ == "__main__":
 
     add_lora_to_model(model_lora)
     mark_trainable(model_lora)
-    model_lora.to(device) 
+    model_lora.to(device)
 
-    print("Number of parameters for basic model: ", count_trainable_params(model))
-    print("Number of parameters for LoRA model: ", count_trainable_params(model_lora))
+    print("Число параметров для базовой модели: ", count_trainable_params(model))
+    print("Число параметров для LoRA модели: ", count_trainable_params(model_lora))
 
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
     optimizer_lora = torch.optim.AdamW(model_lora.parameters(), lr=5e-5)
 
 
-    forwards, backwards, losses = train(model, optimizer, train_loader, device)
-    forwards_lora, backwards_lora, losses_lora = train (model_lora, optimizer_lora, train_loader, device)
+    data = train(model, optimizer, train_loader, device)
+    data_lora = train (model_lora, optimizer_lora, train_loader, device)
 
-    avg_forward = np.mean(forwards)
-    avg_backward = np.mean(backwards)
+    avg_forward = np.mean(data["forwards"])
+    avg_backward = np.mean(data["backwards"])
+    avg_losses = np.mean(data["losses"])
+    
 
-    avg_forward_lora = np.mean(forwards_lora)
-    avg_backward_lora = np.mean(backwards_lora)
+    avg_forward_lora = np.mean(data_lora["forwards"])
+    avg_backward_lora = np.mean(data_lora["backwards"])
+    avg_losses_lora = np.mean(data_lora["losses"])
+
+    avg_vram_forward = np.mean(data["vram_forward"])
+    avg_vram_backward = np.mean(data["vram_backward"])
+    avg_vram_step_total = np.mean(data["vram_step_total"])
+
+    avg_vram_forward_lora = np.mean(data_lora["vram_forward"])
+    avg_vram_backward_lora = np.mean(data_lora["vram_backward"])
+    avg_vram_step_total_lora = np.mean(data_lora["vram_step_total"])
 
 
-    for i, loss in enumerate([losses, losses_lora]): 
+    for i, loss in enumerate([data["losses"], data_lora["losses"]]): 
         plt.figure(figsize=(8, 5))
         plt.plot(loss, label="Loss", linewidth=1.5)
         plt.xlabel("Итерация")
         plt.ylabel("Значение Loss")
-        plt.title("Убывание ошибки (LoRA fine-tuning)")
+        if i == 0:
+            plt.title("Убывание ошибки")
+        else:
+            plt.title("Убывание ошибки (LoRA fine-tuning)")
         plt.grid(True, linestyle="--", alpha=0.5)
         plt.legend()
         plt.tight_layout()
@@ -92,14 +107,21 @@ if __name__ == "__main__":
         plt.savefig(f"{i}_loss_curve.png", dpi=150)
 
     print("=== Базовая модель ===")
-    print(f"Среднее время forward:  {avg_forward:.4f}")
-    print(f"Среднее время backward: {avg_backward:.4f}")
-
-    
+    print(f"Среднее время forward:      {avg_forward:.4f}")
+    print(f"Среднее время backward:     {avg_backward:.4f}")
+    print(f"Средний лосс:               {avg_losses:.4f}")
+    # print(f"Средний VRAM forward (MB):  {avg_vram_forward:.2f}")
+    # print(f"Средний VRAM backward (MB): {avg_vram_backward:.2f}")
+    print(f"Средний VRAM step (MB):     {avg_vram_step_total:.2f}")
 
     print("\n=== Модель с LoRA ===")
-    print(f"Среднее время forward:  {avg_forward_lora:.4f}")
-    print(f"Среднее время backward: {avg_backward_lora:.4f}")
+    print(f"Среднее время forward:      {avg_forward_lora:.4f}")
+    print(f"Среднее время backward:     {avg_backward_lora:.4f}")
+    print(f"Средний лосс:               {avg_losses_lora:.4f}")
+    # print(f"Средний VRAM forward (MB):  {avg_vram_forward_lora:.2f}")
+    # print(f"Средний VRAM backward (MB): {avg_vram_backward_lora:.2f}")
+    print(f"Средний VRAM step (MB):     {avg_vram_step_total_lora:.2f}")
+
 
 
 
