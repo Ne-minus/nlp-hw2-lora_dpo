@@ -25,7 +25,7 @@ python -m src.sft.training
 При обработке датасета сначала сделала ошибку, не оставила в конце таргета *Assistant:* для продолжения генерации, поэтому при первых нескольких попытках модель галюцинировала. LR выбрала равной 5e-6.
 Добавила early-stopping по лоссу на валидации, считала каждые 20 шагов. Логи можно посмотреть в [отчете с wandb](https://wandb.ai/esneminova-skolkovo-institute-of-science-and-technology/pythia-lora-ft/reports/Pythia-SFT-LoRA-fine-tuning--VmlldzoxNTA4Mjg5Mw?accessToken=5x8lu7eczor78mbta0bxyh3z3ar6layv37qx0fpjp7h6vytntyw2rgmdg10n4h8e).
 
-После того, как обучила на правильно подготовленном датасете, генерации получаются осмысленными, но есть и перлы)))
+После того, как обучила на правильно подготовленном датасете (```python -m src.dataset.dataset```), генерации получаются осмысленными, но есть и перлы)))
 
 ```
 ==================================================
