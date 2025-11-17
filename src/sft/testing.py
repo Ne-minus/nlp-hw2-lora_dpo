@@ -14,6 +14,7 @@ CKPT_PATH = "/workspace/best_step.pt"                        # чекпоинт 
 TEST_PATH = "/workspace/src/dataset/files/hh_rlhf_chosen_test.jsonl"                          # твой test датасет
 NUM_EXAMPLES = 5                                   # сколько примеров показать
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(DEVICE)
 
 
 # ======================
