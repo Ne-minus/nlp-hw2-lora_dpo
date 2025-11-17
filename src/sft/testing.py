@@ -13,7 +13,6 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(DEVICE)
 
 
-
 print("Loading tokenizer & base model...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
@@ -33,6 +32,7 @@ print("Checkpoint loaded successfully.")
 
 
 
+
 print("Loading test dataset:", TEST_PATH)
 test_samples = []
 with open(TEST_PATH, "r", encoding="utf-8") as f:
@@ -40,7 +40,6 @@ with open(TEST_PATH, "r", encoding="utf-8") as f:
         test_samples.append(json.loads(line))
 
 print(f"Loaded {len(test_samples)} test samples.")
-
 
 
 def generate_answer(model, tokenizer, prompt, max_new_tokens=200):
@@ -52,11 +51,13 @@ def generate_answer(model, tokenizer, prompt, max_new_tokens=200):
             max_new_tokens=max_new_tokens,
             do_sample=True,
             temperature=0.7,
-            top_p=0.9,
-            eos_token_id=None,
+            top_p=0.95,
+            eos_token_id=tokenizer.eos_token_id,
         )
 
-    return tokenizer.decode(output[0], skip_special_tokens=True)
+        generated_tokens = output[0][inputs["input_ids"].shape[1]:]
+
+    return tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
 
 examples = random.sample(test_samples, NUM_EXAMPLES)
