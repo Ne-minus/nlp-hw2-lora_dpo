@@ -207,3 +207,6 @@ marimo/_lsp/
 __marimo__/
 .venv-backups/
 .hf_home/
+wandb/
+files/
+best_step.pt

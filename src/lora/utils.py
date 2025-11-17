@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from lora.lora_module import LoRALinear
+from src.lora.lora_module import LoRALinear
 
 def get_parents(model, module_name: str):
 
@@ -34,6 +34,36 @@ def add_lora_to_model(
     # print("LoRA добавлена в слои:")
     # for n in replaced:
     #     print("  -", n)
+
+def add_lora_to_neox(
+    model,
+    r=8,
+    alpha=16,
+    dropout=0.0
+):
+    for name, module in model.named_modules():
+        if "query_key_value" in name:
+            parent, child_name = find_module(model, name)
+            old = getattr(parent, child_name)
+            new = QKV_LoRA(old, r, alpha, dropout)   # специальный LoRA
+            setattr(parent, child_name, new)
+
+        elif any(x in name for x in [
+            "attention.dense",
+            "mlp.dense_h_to_4h",
+            "mlp.dense_4h_to_h"
+        ]):
+            parent, child_name = find_module(model, name)
+            old = getattr(parent, child_name)
+            new = LoRALinear(old, r, alpha, dropout)
+            setattr(parent, child_name, new)
+
+def find_module(model, name):
+    parts = name.split(".")
+    for p in parts[:-1]:
+        model = getattr(model, p)
+    return model, parts[-1]
+
 
 def mark_trainable(model: nn.Module):
     for p in model.parameters():

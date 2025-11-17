@@ -1,5 +1,5 @@
-from lora.utils import get_parents, add_lora_to_model, mark_trainable, count_trainable_params, train, get_mem
-from lora.lora_module import LoRALinear
+from src.lora.utils import get_parents, add_lora_to_model, mark_trainable, count_trainable_params, train, get_mem
+from src.lora.lora_module import LoRALinear
 import matplotlib.pyplot as plt
 
 from datasets import load_dataset
