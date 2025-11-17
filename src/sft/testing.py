@@ -55,7 +55,6 @@ def generate_answer(model, tokenizer, prompt, max_new_tokens=200):
             top_p=0.9,
             eos_token_id=None,
         )
-        print("OUTPUT: ", output)
 
     return tokenizer.decode(output[0], skip_special_tokens=True)
 
